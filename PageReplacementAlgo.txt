@@ -1,0 +1,191 @@
+#include <stdio.h>
+#define MAX_FRAMES 3 // Maximum number of frames
+#define MAX_PAGES 20 // Maximum number of pages in the sequence
+
+// Function to find a page in the current frames
+int findPageInFrames(int frames[], int n, int page)
+{
+    for (int i = 0; i < n; i++)
+    {
+        if (frames[i] == page)
+        {
+            return i; // Return the index if the page is found
+        }
+    }
+    return -1; // Return -1 if the page is not found
+}
+
+// Function to print the current state of frames
+void printFrames(int frames[], int n)
+{
+    for (int i = 0; i < n; i++)
+    {
+        if (frames[i] != -1)
+            printf("%d ", frames[i]);
+        else
+            printf("- "); // Print '-' for empty frames
+    }
+    printf("\n");
+}
+
+// LRU Page Replacement Algorithm
+void lruPageReplacement(int pages[], int n)
+{
+    int frames[MAX_FRAMES] = {-1, -1, -1}; // Initialize frames with -1 (empty)
+    int recent[MAX_FRAMES] = {0, 0, 0};   // Array to track recent usage
+    int pageFaults = 0, time = 0;         // Initialize page fault count and time
+
+    printf("\nLRU Page Replacement:\n");
+
+    for (int i = 0; i < n; i++)
+    {
+        int page = pages[i];
+        int pos = findPageInFrames(frames, MAX_FRAMES, page);
+
+        if (pos == -1) // Page fault
+        {
+            int lruIndex = 0;
+            for (int j = 1; j < MAX_FRAMES; j++)
+            {
+                if (recent[j] < recent[lruIndex]) // Find least recently used page
+                {
+                    lruIndex = j;
+                }
+            }
+            frames[lruIndex] = page;   // Replace the LRU page
+            time = time + 1;          // Increment time
+            recent[lruIndex] = time;  // Update recent usage
+            pageFaults++;             // Increment page fault count
+            printf("Page %d caused a page fault. Frames: ", page);
+        }
+        else
+        {
+            time = time + 1;     // Increment time
+            recent[pos] = time; // Update recent usage for the found page
+            printf("Page %d already in frames. Frames: ", page);
+        }
+
+        printFrames(frames, MAX_FRAMES);
+    }
+
+    printf("Total Page Faults (LRU): %d\n", pageFaults);
+}
+
+// FCFS Page Replacement Algorithm
+void fcfsPageReplacement(int pages[], int n)
+{
+    int frames[MAX_FRAMES] = {-1, -1, -1}; // Initialize frames with -1 (empty)
+    int pageFaults = 0, index = 0;         // Initialize page fault count and frame index
+
+    printf("\nFCFS Page Replacement:\n");
+    for (int i = 0; i < n; i++)
+    {
+        int page = pages[i];
+        if (findPageInFrames(frames, MAX_FRAMES, page) == -1) // Page fault
+        {
+            frames[index] = page; // Replace the page in the next frame
+            index = (index + 1) % MAX_FRAMES; // Update index in a circular manner
+            pageFaults++; // Increment page fault count
+            printf("Page %d caused a page fault. Frames: ", page);
+        }
+        else
+        {
+            printf("Page %d already in frames. Frames: ", page);
+        }
+        printFrames(frames, MAX_FRAMES);
+    }
+    printf("Total Page Faults (FCFS): %d\n", pageFaults);
+}
+
+// Helper function to predict future use for Optimal Page Replacement
+int predictFutureUse(int frames[], int n, int pages[], int currentIndex, int totalPages)
+{
+    int farthest = currentIndex, replaceIndex = -1;
+
+    for (int i = 0; i < n; i++)
+    {
+        int j;
+        for (j = currentIndex + 1; j < totalPages; j++)
+        {
+            if (frames[i] == pages[j]) // Check if the page will be used in the future
+            {
+                if (j > farthest)
+                {
+                    farthest = j;      // Update the farthest usage
+                    replaceIndex = i; // Update the frame index to replace
+                }
+                break;
+            }
+        }
+
+        if (j == totalPages) // Page not used in the future
+        {
+            return i; // Replace immediately
+        }
+    }
+
+    return (replaceIndex == -1) ? 0 : replaceIndex;
+}
+
+// Optimal Page Replacement Algorithm
+void optimalPageReplacement(int pages[], int n)
+{
+    int frames[MAX_FRAMES] = {-1, -1, -1}; // Initialize frames with -1 (empty)
+    int pageFaults = 0;                    // Initialize page fault count
+
+    printf("\nOptimal Page Replacement:\n");
+
+    for (int i = 0; i < n; i++)
+    {
+        int page = pages[i];
+        int pos = findPageInFrames(frames, MAX_FRAMES, page);
+
+        if (pos == -1) // Page fault
+        {
+            if (i < MAX_FRAMES)
+            {
+                frames[i] = page; // Fill the frames initially
+            }
+            else
+            {
+                int replaceIndex = predictFutureUse(frames, MAX_FRAMES, pages, i, n);
+                frames[replaceIndex] = page; // Replace the appropriate page
+            }
+            pageFaults++; // Increment page fault count
+            printf("Page %d caused a page fault. Frames: ", page);
+        }
+        else
+        {
+            printf("Page %d already in frames. Frames: ", page);
+        }
+
+        printFrames(frames, MAX_FRAMES);
+    }
+
+    printf("Total Page Faults (Optimal): %d\n", pageFaults);
+}
+
+int main()
+{
+    int pages[MAX_PAGES], n;
+
+    printf("Enter the number of pages: ");
+    scanf("%d", &n);
+
+    printf("Enter the page reference sequence: ");
+    for (int i = 0; i < n; i++)
+    {
+        scanf("%d", &pages[i]);
+    }
+
+    printf("\nRunning LRU Page Replacement:\n");
+    lruPageReplacement(pages, n);
+
+    printf("\nRunning FCFS Page Replacement:\n");
+    fcfsPageReplacement(pages, n);
+
+    printf("\nRunning Optimal Page Replacement:\n");
+    optimalPageReplacement(pages, n);
+
+    return 0;
+}
