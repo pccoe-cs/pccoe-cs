@@ -1,0 +1,116 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<semaphore.h>
+#include<pthread.h>
+#include<unistd.h>
+
+// Declare a semaphore for synchronizing access to the shared resource 's' between readers and writers.
+sem_t sem;  
+// Mutex to control access to the readcount variable, which tracks the number of active readers.
+pthread_mutex_t x;  
+
+// Shared resource
+int readcount = 0;  // Keeps track of the number of active readers.
+int s = 5;          // Shared resource that is manipulated by writers and read by readers.
+
+void *writef(void *a) {
+    // Writer function which takes a pointer to the writer's ID (converted from long long).
+    int r = (long long)a;
+    int i = 0;
+
+    // Writer performs 3 write operations.
+    while(i < 3) {
+        sem_wait(&sem);  // Writer waits for exclusive access to the shared resource 's'.
+        s = s + 5;       // Modify the shared resource 's'.
+        printf("Writer %d is writing %d \n", i, s);  // Output the writer's action.
+        sem_post(&sem);  // Release access to the shared resource 's'.
+        
+        sleep(rand() % 10);  // Random sleep for simulation of writing time.
+        i++;  // Increment writer operation count.
+    }
+
+    return NULL;  // End the writer thread.
+}
+
+void *readf(void *a) {
+    // Reader function which takes a pointer to the reader's ID (converted from long long).
+    int r = (long long)a;
+    int i = 0;
+
+    // Reader performs 3 read operations.
+    while(i < 3) {
+        // Lock the mutex to safely modify the shared readcount variable.
+        pthread_mutex_lock(&x);
+        readcount++;  // Increment the count of active readers.
+
+        // If this is the first reader, acquire the semaphore for reading.
+        if(readcount == 1) {
+            sem_wait(&sem);  // Block writers by acquiring the semaphore.
+        }
+        pthread_mutex_unlock(&x);  // Unlock the mutex after updating readcount.
+
+        // Read operation: Display the current value of 's'.
+        printf("\t\t Reader %d is reading %d \n", i, s);
+        
+        // Lock mutex again before modifying readcount.
+        pthread_mutex_lock(&x);
+        readcount--;  // Decrement the count of active readers.
+
+        // If there are no more readers, release the semaphore, allowing writers to write.
+        if(readcount == 0) {
+            sem_post(&sem);  // Release the semaphore to allow writers.
+        }
+        pthread_mutex_unlock(&x);  // Unlock the mutex after updating readcount.
+        
+        sleep(rand() % 10);  // Random sleep for simulation of reading time.
+        i++;  // Increment reader operation count.
+    }
+
+    return NULL;  // End the reader thread.
+}
+
+int main() {
+    int op;
+    pthread_t reader[5];  // Array of threads for readers.
+    pthread_t writer[5];  // Array of threads for writers.
+    
+    // Initialize the mutex and semaphore.
+    pthread_mutex_init(&x, NULL);
+    sem_init(&sem, 0, 1);  // Initialize semaphore with a value of 1 (binary semaphore).
+
+    do {
+        // Menu for selecting operation
+        printf("Enter your choice\n");
+        printf("1.Reader Priority\n");
+        printf("2.Exit\n");
+        scanf("%d", &op);  // Take user input to either run reader priority or exit.
+
+        if(op == 1) {
+            // Create 3 writer threads.
+            for(int i = 0; i < 3; i++) {
+                pthread_create(&writer[i], NULL, writef, (void *)(long long)i);
+            }
+
+            // Create 3 reader threads.
+            for(int i = 0; i < 3; i++) {
+                pthread_create(&reader[i], NULL, readf, (void *)(long long)i);
+            }
+
+            // Wait for all writer threads to finish.
+            for(int i = 0; i < 3; i++) {
+                pthread_join(writer[i], NULL);
+            }
+
+            // Wait for all reader threads to finish.
+            for(int i = 0; i < 3; i++) {
+                pthread_join(reader[i], NULL);
+            }
+        }
+        else if(op == 2) {
+            break;  // Exit the loop and end the program.
+        }
+
+    } while(op != 2);  // Continue the loop until the user chooses to exit.
+
+    return 0;  // Return from main function, ending the program.
+}
