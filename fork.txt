@@ -3,66 +3,77 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 
-int arr[1000];
-int n;
+int arr[1000];  // Array to store input numbers
+int n;  // Number of elements in the array
 
+// Function for sorting the array in ascending order using Bubble Sort
 void ascending_sort(int p, int n) {
     printf("\t\t\t\tAscending sort\n");
+
     // Bubble sort for ascending order
     for (int i = 0; i < n-1; ++i) {
         for (int j = 0; j < n-i-1; ++j) {
             if (arr[j] > arr[j+1]) {
+                // Swap elements if they are in the wrong order
                 int temp = arr[j];
                 arr[j] = arr[j+1];
                 arr[j+1] = temp;
             }
         }
     }
+
+    // Print the sorted array and information about the process
     for (int i = 0; i < n; i++) {
-        sleep(1); 
+        sleep(1);  // Sleep for 1 second to simulate processing time
+        // Print the current element, process ID (PID), and parent process ID (PPID)
         printf("\t\t\t\ti=%d , p=%d , pid=%d , ppid=%d \n", arr[i], p, getpid(), getppid());
     }
 }
 
+// Function for sorting the array in descending order using Bubble Sort
 void descending_sort(int p, int n) {
     printf("Descending sort\n");
+
     // Bubble sort for descending order
     for (int i = 0; i < n-1; i++) {
         for (int j = 0; j < n-i-1; j++) {
             if (arr[j] < arr[j+1]) {
+                // Swap elements if they are in the wrong order
                 int t = arr[j];
                 arr[j] = arr[j+1];
                 arr[j+1] = t;
             }
         }
     }
+
+    // Print the sorted array and information about the process
     for (int i = 0; i < n; i++) {
-        sleep(5); 
-        wait(NULL); // Wait for child process to finish
+        sleep(5);  // Sleep for 5 seconds to simulate processing time
+        wait(NULL); // Wait for the child process to finish before proceeding
+        // Print the current element, process ID (PID), and parent process ID (PPID)
         printf("i=%d,p=%d,pid=%d,ppid=%d\n", arr[i], p, getpid(), getppid());
     }
 }
 
 int main() {
-    int p = 1000;
+    int p = 1000;  // Process ID (this will be modified by fork)
+    
     printf("Enter the size of array:\n");
-    scanf("%d", &n);
+    scanf("%d", &n);  // Get the number of elements in the array
     
     printf("Enter the elements:\n");
     for (int i = 0; i < n; i++) {
-        scanf("%d", &arr[i]);
+        scanf("%d", &arr[i]);  // Get the elements of the array from user
     }
 
+    // Fork the process, creating a child process
     p = fork(); 
 
-    if (p == 0) 
-    {
-        // Child process
+    if (p == 0) {
+        // Child process: Call the function to sort the array in ascending order
         ascending_sort(p, n);
-    } 
-    else 
-    {
-        // Parent process 
+    } else {
+        // Parent process: Call the function to sort the array in descending order
         descending_sort(p, n);
     }
     return 0;
