@@ -132,3 +132,79 @@ pr arr burst tat wait
 
   avg turn around time:6.250000 
 avg waiting time:2.750000 osl16@sufiyan:~/TYITB106$
+
+
+#ROUNDROBIN
+
+
+#include <stdio.h>
+
+int main()
+{
+    int processCount, currentProcess, totalProcesses, totalTime, remainingProcesses, timeQuantum;
+    int totalWaitTime = 0, totalTurnaroundTime = 0;
+    int arrivalTime[10], burstTime[10], remainingTime[10];
+    int flag = 0;
+
+    // Input the number of processes
+    printf("Enter Total Number of Processes:\t ");
+    scanf("%d", &totalProcesses);
+    remainingProcesses = totalProcesses;
+
+    // Input Arrival Time and Burst Time for each process
+    for (processCount = 0; processCount < totalProcesses; processCount++)
+    {
+        printf("Enter Arrival Time and Burst Time for Process %d: ", processCount + 1);
+        scanf("%d", &arrivalTime[processCount]);
+        scanf("%d", &burstTime[processCount]);
+        remainingTime[processCount] = burstTime[processCount]; // Set remaining time equal to burst time initially
+    }
+
+    // Input the Time Quantum
+    printf("Enter Time Quantum:\t");
+    scanf("%d", &timeQuantum);
+
+    // Display the result headers
+    printf("\n\nProcess\t| Turnaround Time | Waiting Time\n\n");
+
+    // Start the scheduling logic
+    for (totalTime = 0, processCount = 0; remainingProcesses != 0;)
+    {
+        // Check if the process can be completed in one round of time quantum
+        if (remainingTime[processCount] <= timeQuantum && remainingTime[processCount] > 0)
+        {
+            totalTime += remainingTime[processCount];
+            remainingTime[processCount] = 0;  // Process is now completed
+            flag = 1; // Mark that the process was completed
+        }
+        else if (remainingTime[processCount] > 0)
+        {
+            remainingTime[processCount] -= timeQuantum; // Reduce remaining time of process
+            totalTime += timeQuantum;
+        }
+
+        // If the process is completed, calculate its waiting and turnaround times
+        if (remainingTime[processCount] == 0 && flag == 1)
+        {
+            remainingProcesses--; // Decrement the remaining process count
+            printf("P[%d]\t|\t%d\t|\t%d\n", processCount + 1, totalTime - arrivalTime[processCount], totalTime - arrivalTime[processCount] - burstTime[processCount]);
+            totalWaitTime += totalTime - arrivalTime[processCount] - burstTime[processCount];
+            totalTurnaroundTime += totalTime - arrivalTime[processCount];
+            flag = 0; // Reset flag after completion of the process
+        }
+
+        // Move to the next process, ensuring we respect arrival times
+        if (processCount == totalProcesses - 1)
+            processCount = 0; // If we are at the last process, go back to the first process
+        else if (arrivalTime[processCount + 1] <= totalTime)
+            processCount++; // Move to the next process if its arrival time is less than or equal to total time
+        else
+            processCount = 0; // If the next process hasn't arrived yet, stay at current process
+    }
+
+    // Calculate and display the average waiting and turnaround times
+    printf("\nAverage Waiting Time = %f\n", totalWaitTime * 1.0 / totalProcesses);
+    printf("Average Turnaround Time = %f", totalTurnaroundTime * 1.0 / totalProcesses);
+
+    return 0;
+}
